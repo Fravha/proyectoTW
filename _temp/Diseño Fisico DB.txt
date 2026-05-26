@@ -1,0 +1,237 @@
+-- =========================================
+-- CREACION DE BASE DE DATOS
+-- =========================================
+CREATE DATABASE IF NOT EXISTS tienda_delivery;
+USE tienda_delivery;
+
+-- =========================================
+-- TABLA PRODUCTOS
+-- =========================================
+CREATE TABLE productos (
+    idProducto INT AUTO_INCREMENT PRIMARY KEY,
+
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+
+    precioUnitario DECIMAL(10,2) NOT NULL
+);
+
+-- =========================================
+-- TABLA TRABAJADOR
+-- =========================================
+CREATE TABLE trabajador (
+    idTrabajador INT AUTO_INCREMENT PRIMARY KEY,
+
+    nombre VARCHAR(50) NOT NULL,
+    apellido VARCHAR(50) NOT NULL,
+
+    ci VARCHAR(20) UNIQUE NOT NULL,
+
+    fechaNacimiento DATE,
+
+    puesto ENUM(
+        'Caja',
+        'Supervisor',
+        'Admin'
+    ) NOT NULL
+);
+
+-- =========================================
+-- TABLA CLIENTE
+-- =========================================
+CREATE TABLE cliente (
+    idCliente INT AUTO_INCREMENT PRIMARY KEY,
+
+    nombre VARCHAR(50) NOT NULL,
+    apellido VARCHAR(50) NOT NULL,
+
+    nit_ci VARCHAR(30),
+
+    noTelefono VARCHAR(20)
+);
+
+-- =========================================
+-- TABLA VENTA
+-- =========================================
+CREATE TABLE venta (
+    idVenta INT AUTO_INCREMENT PRIMARY KEY,
+
+    idTrabajador INT NOT NULL,
+    idCliente INT NOT NULL,
+
+    precioTotal DECIMAL(10,2) NOT NULL,
+
+    tipoEntrega ENUM(
+        'Tienda',
+        'Delivery',
+        'Recojo'
+    ) NOT NULL,
+
+    fechaVenta DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- =====================================
+    -- LLAVES FORANEAS
+    -- =====================================
+    CONSTRAINT fk_venta_trabajador
+        FOREIGN KEY (idTrabajador)
+        REFERENCES trabajador(idTrabajador),
+
+    CONSTRAINT fk_venta_cliente
+        FOREIGN KEY (idCliente)
+        REFERENCES cliente(idCliente)
+);
+
+-- =========================================
+-- TABLA DETALLE VENTA
+-- =========================================
+CREATE TABLE ventaDetalle (
+    idDetalle INT AUTO_INCREMENT PRIMARY KEY,
+
+    idVenta INT NOT NULL,
+    idProducto INT NOT NULL,
+
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+
+    precioUnitario DECIMAL(10,2) NOT NULL,
+
+    subtotal DECIMAL(10,2) NOT NULL,
+
+    -- =====================================
+    -- LLAVES FORANEAS
+    -- =====================================
+    CONSTRAINT fk_detalle_venta
+        FOREIGN KEY (idVenta)
+        REFERENCES venta(idVenta),
+
+    CONSTRAINT fk_detalle_producto
+        FOREIGN KEY (idProducto)
+        REFERENCES productos(idProducto)
+);
+
+-- =========================================
+-- TABLA DELIVERY
+-- =========================================
+CREATE TABLE delivery (
+    idDelivery INT AUTO_INCREMENT PRIMARY KEY,
+
+    idVenta INT NOT NULL,
+
+    nombreRider VARCHAR(100) NOT NULL,
+
+    estadoEntrega ENUM(
+        'Pendiente',
+        'En Camino',
+        'Entregado',
+        'No Entregado'
+    ) DEFAULT 'Pendiente',
+
+    ubicacionGPS VARCHAR(255),
+
+    direccionEscrita TEXT NOT NULL,
+
+    estado ENUM(
+        'Activo',
+        'Finalizado'
+    ) DEFAULT 'Activo',
+
+    fechaRegistro DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- =====================================
+    -- LLAVE FORANEA
+    -- =====================================
+    CONSTRAINT fk_delivery_venta
+        FOREIGN KEY (idVenta)
+        REFERENCES venta(idVenta)
+);
+
+-- =========================================
+-- INDICES
+-- =========================================
+
+CREATE INDEX idx_producto_nombre
+ON productos(nombre);
+
+CREATE INDEX idx_cliente_nombre
+ON cliente(nombre);
+
+CREATE INDEX idx_venta_fecha
+ON venta(fechaVenta);
+
+-- =========================================
+-- DATOS DE PRUEBA
+-- =========================================
+
+-- PRODUCTOS
+INSERT INTO productos(nombre, descripcion, precioUnitario)
+VALUES
+('Hamburguesa', 'Hamburguesa doble carne', 35.50),
+('Pizza Familiar', 'Pizza peperoni', 80.00),
+('Gaseosa', 'Coca Cola 2L', 15.00);
+
+-- TRABAJADORES
+INSERT INTO trabajador(
+    nombre,
+    apellido,
+    ci,
+    fechaNacimiento,
+    puesto
+)
+VALUES
+('Carlos', 'Perez', '1234567', '1995-02-10', 'Caja'),
+('Ana', 'Lopez', '9876543', '1990-08-20', 'Supervisor');
+
+-- CLIENTES
+INSERT INTO cliente(
+    nombre,
+    apellido,
+    nit_ci,
+    noTelefono
+)
+VALUES
+('Juan', 'Mamani', '778899', '70000001');
+
+-- VENTA
+INSERT INTO venta(
+    idTrabajador,
+    idCliente,
+    precioTotal,
+    tipoEntrega
+)
+VALUES
+(
+    1,
+    1,
+    130.50,
+    'Delivery'
+);
+
+-- DETALLE VENTA
+INSERT INTO ventaDetalle(
+    idVenta,
+    idProducto,
+    cantidad,
+    precioUnitario,
+    subtotal
+)
+VALUES
+(1, 1, 2, 35.50, 71.00),
+(1, 2, 1, 80.00, 80.00);
+
+-- DELIVERY
+INSERT INTO delivery(
+    idVenta,
+    nombreRider,
+    estadoEntrega,
+    ubicacionGPS,
+    direccionEscrita,
+    estado
+)
+VALUES
+(
+    1,
+    'Luis Rider',
+    'En Camino',
+    '-17.7833,-63.1821',
+    'Av. Banzer 3er anillo',
+    'Activo'
+);
